@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccessLevel {
+  OWNER
+  ADMIN
+  USER
+}
+
+enum EventType {
+  DOORBELL
+  DOOR_UNLOCKED
+  DOOR_LOCKED
+  INVITE_SENT
+  INVITE_ACCEPTED
+  INVITE_RECEIVED
+}
+
+enum CallStatus {
+  ACTIVE
+  FINISHED
+}
+
+enum MessageOrigin {
+  USER
+  DEVICE
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+model User {
+  id        String   @unique
+  email     String   @unique
+  name      String
+  notificationToken String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  accesses   Access[]
+  sentInvites Invite[] @relation("SentInvites")
+  receivedInvites Invite[] @relation("ReceivedInvites")
+  revokedInvites Invite[] @relation("RevokedInvites") 
+  events     Event[]
+
+  @@map("users")
+}
+
+model Device {
+  serialNumber String @id @map("serial_number")
+  name String @map("name")
+  publicKey String @map("public_key") @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  accesses   Access[]
+  recordings  Recordings[] @relation("DeviceToRecordings")
+  invites Invite[]
+  events     Event[]
+  calls      Call[]
+
+  @@map("devices")
+}
+
+model Access {
+  id String  @id @default(cuid())
+  userId String @map("user_id")
+  deviceSerialNumber String @map("device_serial_number")
+  nickname String @map("nickname")
+  accessLevel AccessLevel @default(USER) @map("access_level")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device @relation(fields: [deviceSerialNumber], references: [serialNumber], onDelete: Cascade)
+}
+
+model Recordings {
+  id String @id @default(cuid())
+  deviceSerialNumber String @map("device_serial_number")
+  size String @map("size")
+  duration String @map("duration")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  device Device @relation("DeviceToRecordings", fields: [deviceSerialNumber], references: [serialNumber], onDelete: Cascade)
+
+  @@map("recordings")
+}
+
+model Invite {
+  id String @id @default(cuid())
+  senderId String @map("sender_id")
+  receiverId String @map("receiver_id")
+  revokedId String? @map("revoked_id")
+  deviceSerialNumber String @map("device_serial_number")
+  status InviteStatus @default(PENDING)
+  accessLevel AccessLevel @default(USER) @map("access_level")
+
+  sender User @relation("SentInvites", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedInvites", fields: [receiverId], references: [id], onDelete: Cascade)
+  revoked User? @relation("RevokedInvites", fields: [revokedId], references: [id], onDelete: Cascade)
+  device Device @relation(fields: [deviceSerialNumber], references: [serialNumber], onDelete: Cascade)
+  events Event[]
+
+  @@map("invites")
+}
+
+
+model Event {
+  id String @id @default(cuid())
+  timestamp DateTime @default(now()) @map("timestamp")
+  userId String? @map("user_id")
+  deviceSerialNumber String @map("device_serial_number")
+  inviteId String? @map("invite_id")
+  type EventType @map("type")
+  user User? @relation(fields: [userId], references: [id])
+  device Device @relation(fields: [deviceSerialNumber], references: [serialNumber], onDelete: Cascade)
+  invite Invite? @relation(fields: [inviteId], references: [id])
+  readAt DateTime? @map("read_at")
+
+  @@map("events")
+}
+
+model Call {
+  id                  String   @id @default(cuid())
+  deviceSerialNumber  String   @map("device_serial_number")
+  startedAt           DateTime @default(now()) @map("started_at")
+  endedAt             DateTime? @map("ended_at")
+  status              CallStatus @default(ACTIVE) @map("status")
+  messages            Message[]
+
+  device Device @relation(fields: [deviceSerialNumber], references: [serialNumber], onDelete: Cascade)
+
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  callId    String   @map("call_id")
+  text      String   @map("content")
+  origin    MessageOrigin @map("origin")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+}

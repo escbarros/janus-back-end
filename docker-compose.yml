@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: janus-postgres
+    environment:
+      POSTGRES_DB: janus_db
+      POSTGRES_USER: janus_user
+      POSTGRES_PASSWORD: janus_password
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - janus-network
+
+  api:
+    build: .
+    container_name: janus-api
+    env_file:
+      - ./.env
+    environment:
+      DATABASE_URL: 'postgresql://janus_user:janus_password@postgres:5432/janus_db?schema=public'
+      REDIS_HOST: 'redis'
+      RABBITMQ_URL: 'amqp://guest:guest@rabbitmq:5672'
+    ports:
+      - '3000:3000'
+    depends_on:
+      - postgres
+      - rabbitmq
+    networks:
+      - janus-network
+    command: >
+      sh -c "
+      while ! nc -z postgres 5432; do sleep 1; done;
+      while ! nc -z rabbitmq 5672; do sleep 1; done;
+      npx prisma migrate deploy &&
+      node dist/main.js
+      "
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: janus-rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672' # painel web
+    networks:
+      - janus-network
+
+volumes:
+  postgres_data:
+
+networks:
+  janus-network:
+    driver: bridge
