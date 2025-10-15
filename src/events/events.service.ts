@@ -1,8 +1,26 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { Device, EventType, User } from 'generated/prisma';
+import { EventType, Prisma, User } from 'generated/prisma';
 import { PrismaService } from 'src/shared/prisma.service';
 import { S3Service } from 'src/shared/s3.service';
 import * as crypto from 'crypto';
+
+type DeviceWithAccessesAndTokens = Prisma.DeviceGetPayload<{
+  select: {
+    serialNumber: true;
+    name: true;
+    publicKey: true;
+    accesses: {
+      select: {
+        nickname: true;
+        user: {
+          select: {
+            notificationToken: true;
+          };
+        };
+      };
+    };
+  };
+}>;
 
 @Injectable()
 export class EventsService {
@@ -106,9 +124,24 @@ export class EventsService {
 
   async checkIfDeviceExists(
     deviceSerialNumber: string
-  ): Promise<Device | null> {
+  ): Promise<DeviceWithAccessesAndTokens | null> {
     const device = await this.prisma.device.findUnique({
       where: { serialNumber: deviceSerialNumber },
+      select: {
+        serialNumber: true,
+        publicKey: true,
+        name: true,
+        accesses: {
+          select: {
+            nickname: true,
+            user: {
+              select: {
+                notificationToken: true,
+              },
+            },
+          },
+        },
+      },
     });
     return device;
   }

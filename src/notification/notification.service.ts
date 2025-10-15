@@ -62,4 +62,35 @@ export class NotificationService {
       throw new InternalServerErrorException('Falha ao enviar notificação');
     }
   }
+
+  async sendBatchNotification(messages: ExpoPushMessage[]) {
+    console.log(messages);
+    try {
+      if (messages.length === 0) {
+        return [];
+      }
+
+      const chunks = this.expo.chunkPushNotifications(messages);
+      const tickets: ExpoPushTicket[] = [];
+
+      for (const chunk of chunks) {
+        try {
+          const ticketChunk = await this.expo.sendPushNotificationsAsync(chunk);
+          tickets.push(...ticketChunk);
+        } catch (error) {
+          console.error('Erro ao enviar batch de notificações:', error);
+        }
+      }
+
+      console.log(
+        `✅ Notificações enviadas para ${messages.length} usuários (${chunks.length} batch(es)).`
+      );
+      return tickets;
+    } catch (err) {
+      console.error('Erro ao enviar notificações da campainha:', err);
+      throw new InternalServerErrorException(
+        'Falha no envio das notificações da campainha'
+      );
+    }
+  }
 }

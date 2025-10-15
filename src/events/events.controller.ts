@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Get,
   Headers,
+  Inject,
   NotFoundException,
   Param,
   Patch,
@@ -21,13 +22,17 @@ import { EventDoorbellRequestDto } from './dto/event-doorbell-request-dto';
 import { DeviceHeaderRequestDto } from 'src/shared/dto/device-header-request-dto';
 import { EvenLockedUnlockedRequestDto } from './dto/event-locked-unlocked-request-dto';
 import { ClerkHttpService } from 'src/shared/clerk-http.service';
+import { NOTIFICATION_SERVICE } from 'src/shared/constants/services';
+import { ClientProxy } from '@nestjs/microservices';
 
 @ApiTags('Events')
 @Controller('events')
 export class EventsController {
   constructor(
     private readonly eventService: EventsService,
-    private readonly clerkHttpService: ClerkHttpService
+    private readonly clerkHttpService: ClerkHttpService,
+    @Inject(NOTIFICATION_SERVICE)
+    private readonly notificationClient: ClientProxy
   ) {}
 
   @ApiBearerAuth('JWT-auth')
@@ -140,6 +145,14 @@ export class EventsController {
 
     const event =
       await this.eventService.handleDoorbellEvent(deviceSerialNumber);
+
+    if (device.accesses.length > 0) {
+      this.notificationClient.emit('send_doorbell_notification', {
+        eventId: event.id,
+        accesses: device.accesses,
+      });
+    }
+
     return event;
   }
 
@@ -184,6 +197,19 @@ export class EventsController {
     }
 
     const event = await this.eventService.handleLockedEvent(deviceId, userId);
+    console.log(device.accesses);
+
+    device.accesses = device.accesses.filter(
+      a => a.user.notificationToken !== user.notificationToken
+    );
+    console.log(device.accesses);
+    if (device.accesses.length > 0) {
+      this.notificationClient.emit('send_lock_notification', {
+        eventId: event.id,
+        accesses: device.accesses,
+        username: user.name.split(' ')[0],
+      });
+    }
     return event;
   }
 
@@ -228,6 +254,18 @@ export class EventsController {
     }
 
     const event = await this.eventService.handleUnlockedEvent(deviceId, userId);
+    console.log(device.accesses);
+
+    device.accesses = device.accesses.filter(
+      a => a.user.notificationToken !== user.notificationToken
+    );
+    if (device.accesses.length > 0) {
+      this.notificationClient.emit('send_unlock_notification', {
+        eventId: event.id,
+        accesses: device.accesses,
+        username: user.name.split(' ')[0],
+      });
+    }
     return event;
   }
 }
