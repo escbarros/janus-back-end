@@ -1,4 +1,4 @@
-# Janus — API do Interfone Inteligente Acessível
+# Janus — API 
 
 Back-end desenvolvido como parte do Trabalho de Conclusão de Curso de Engenharia de Computação (PUCPR, 2025), cujo objetivo é oferecer uma solução de interfonia residencial acessível para pessoas com deficiência auditiva ou de fala.
 
