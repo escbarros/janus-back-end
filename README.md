@@ -8,6 +8,22 @@ A Janus API é o núcleo de todo o sistema: gerencia dispositivos embarcados, co
 
 ---
 
+## Demonstrações
+
+Vídeos demonstrando as principais funcionalidades do sistema:
+
+| # | Funcionalidade | Vídeo |
+| --- | --- | --- |
+| 1 | Autenticação pelo aplicativo | [▶️ Assistir](https://youtu.be/Q1Ybbk2eQzY) |
+| 2 | Pareamento de um novo interfone | [▶️ Assistir](https://youtu.be/0LwyoF7uhls) |
+| 3 | Funcionamento do evento de campainha | [▶️ Assistir](https://youtu.be/IIqcsuyzZIc) |
+| 4 | Chamada ao vivo | [▶️ Assistir](https://youtu.be/qXcGGxUXxkY) |
+| 5 | Funcionamento da transcrição (Speech-to-Text) | [▶️ Assistir](https://youtu.be/3BP2GhFiSqY) |
+| 6 | Funcionamento da sintetização (Text-to-Speech) | [▶️ Assistir](https://youtu.be/NBumZ8Zto1E) |
+| 7 | Gravação de uma chamada | [▶️ Assistir](https://youtu.be/sJwk4N5R_o0) |
+
+---
+
 ## Sumário
 
 - [Stack Tecnológico](#stack-tecnológico)
@@ -51,7 +67,7 @@ A Janus API é o núcleo de todo o sistema: gerencia dispositivos embarcados, co
 O sistema é composto por três componentes principais:
 
 - **Dispositivo Embarcado** — Raspberry Pi 4 instalado na entrada da residência (câmera, microfone, alto-falante, servo motor).
-- **Aplicativo Móvel** — App em React Native que serve como interface principal do usuário.
+- **Aplicativo Móvel** — App em React Native que serve como interface principal do usuário. [Janus-FrontEnd](https://github.com/escbarros/Janus-FrontEnd/tree/main).
 - **Janus API** — este repositório; intermediador central entre dispositivo e aplicativo.
 
 ```
