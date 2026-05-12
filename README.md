@@ -209,7 +209,7 @@ Todos os exemplos abaixo assumem que a API está rodando localmente. Substitua p
 
 #### `GET /user/auth`
 
-Retorna as informações do usuário autenticado. Cria o usuário no banco de dados na primeira chamada se ele ainda não existir.
+Retorna as informações do usuário autenticado.
 
 **Autenticação:** Bearer Token (obrigatório)
 
